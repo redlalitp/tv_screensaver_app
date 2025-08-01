@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class TimeWidget extends StatefulWidget {
-  const TimeWidget({super.key});
+  final Color textColor;
+
+  const TimeWidget({super.key, required this.textColor});
 
   @override
   State<TimeWidget> createState() => _TimeWidgetState();
@@ -37,19 +39,19 @@ class _TimeWidgetState extends State<TimeWidget> {
     final timeString = DateFormat('HH:mm').format(_now);
     final dayString = DateFormat('EEEE').format(_now);
     final dateString = DateFormat('d MMM yyyy').format(_now);
-    final textColor = isNight ? Colors.white : Colors.black;
+    //final textColor = isNight ? Colors.white : Colors.black;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Text(
           timeString,
-          style: TextStyle(fontSize: 48, color: textColor),
+          style: TextStyle(fontSize: 48, color: widget.textColor),
         ),
         const SizedBox(height: 4),
         Text(
           '$dayString, $dateString',
-          style: TextStyle(fontSize: 20, color: textColor),
+          style: TextStyle(fontSize: 20, color: widget.textColor),
         ),
       ],
     );

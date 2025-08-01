@@ -45,26 +45,30 @@ class _ScreensaverScreenState extends State<ScreensaverScreen> {
   List<String> _imageUrls = [];
   Color _textColor = Colors.white;
   bool _showGradient = false;
+  final Map<String, Color> _paletteCache = {};
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeImages();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initializeImages());
   }
 
   Future<void> _initializeImages() async {
     await _loadImages();
+
     if (_imageUrls.isNotEmpty) {
       _updatePalette(_imageUrls[_currentImageIndex]);
-    }
-    _timer = Timer.periodic(Duration(seconds: 30), (timer) {
-      setState(() {
-        _currentImageIndex = (_currentImageIndex + 1) % _imageUrls.length;
+      _timer = Timer.periodic(Duration(seconds: 30), (timer) {
+        _nextImage();
       });
-      _updatePalette(_imageUrls[_currentImageIndex]);
+    }
+  }
+
+  void _nextImage() {
+    setState(() {
+      _currentImageIndex = (_currentImageIndex + 1) % _imageUrls.length;
     });
+    _updatePalette(_imageUrls[_currentImageIndex]);
   }
 
   Future<void> _loadImages() async {
@@ -75,42 +79,49 @@ class _ScreensaverScreenState extends State<ScreensaverScreen> {
     if (lastFetch != today) {
       final service = UnsplashService();
       final urls = await service.fetchDailyImages(_categories);
-
       if (urls.isNotEmpty) {
-        setState(() => _imageUrls = urls);
+        _imageUrls = urls;
         prefs.setStringList('cachedImages', urls);
         prefs.setString('lastFetchDate', today);
       }
     } else {
-      final cached = prefs.getStringList('cachedImages') ?? [];
-      setState(() => _imageUrls = cached);
+      _imageUrls = prefs.getStringList('cachedImages') ?? [];
     }
+
+    if (mounted) setState(() {});
   }
 
   Future<void> _updatePalette(String imageUrl) async {
-    try {
-      final imageProvider = NetworkImage(imageUrl);
-      final palette = await PaletteGenerator.fromImageProvider(imageProvider);
+    if (_paletteCache.containsKey(imageUrl)) {
+      setState(() {
+        _textColor = _paletteCache[imageUrl]!;
+        _showGradient = true;
+      });
+      return;
+    }
 
+    try {
+      final palette = await PaletteGenerator.fromImageProvider(NetworkImage(imageUrl));
       final dominantColor = palette.dominantColor?.color ?? Colors.black;
 
       final hsl = HSLColor.fromColor(dominantColor);
-      final complementaryHsl = hsl.withHue((hsl.hue + 180) % 360);
+      final complementary = hsl.withHue((hsl.hue + 180) % 360);
       final adjustedLightness = hsl.lightness < 0.3
           ? 0.8
           : (hsl.lightness > 0.7 ? 0.2 : hsl.lightness);
-      final contrastHsl = complementaryHsl.withLightness(adjustedLightness);
-      final contrastColor = contrastHsl.toColor();
+      final contrastColor = complementary.withLightness(adjustedLightness).toColor().withOpacity(0.7);
+
+      _paletteCache[imageUrl] = contrastColor;
 
       setState(() {
-        _textColor = contrastColor.withOpacity(0.7);
+        _textColor = contrastColor;
         _showGradient = false;
       });
 
       await Future.delayed(Duration(milliseconds: 100));
-      setState(() {
-        _showGradient = true;
-      });
+      if (mounted) {
+        setState(() => _showGradient = true);
+      }
     } catch (_) {
       setState(() {
         _textColor = Colors.white.withOpacity(0.9);
@@ -127,9 +138,8 @@ class _ScreensaverScreenState extends State<ScreensaverScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final hour = now.hour;
-    final isNight = hour < 6 || hour > 18;
+    final isNight = DateTime.now().hour < 6 || DateTime.now().hour > 18;
+    final currentImage = _imageUrls.isNotEmpty ? _imageUrls[_currentImageIndex] : null;
 
     return Scaffold(
       backgroundColor: isNight ? Colors.black : Colors.blueGrey.shade100,
@@ -137,53 +147,58 @@ class _ScreensaverScreenState extends State<ScreensaverScreen> {
         children: [
           AnimatedSwitcher(
             duration: Duration(seconds: 2),
-            child: _imageUrls.isNotEmpty
+            child: currentImage != null
                 ? Image.network(
-              _imageUrls[_currentImageIndex],
-              key: ValueKey(_imageUrls[_currentImageIndex]),
+              currentImage,
+              key: ValueKey(currentImage),
               width: double.infinity,
               height: double.infinity,
               fit: BoxFit.cover,
+              loadingBuilder: (context, child, progress) {
+                if (progress == null) return child;
+                return const SizedBox.shrink();
+              },
             )
                 : const SizedBox.shrink(),
           ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: AnimatedOpacity(
-              duration: Duration(seconds: 2),
-              opacity: _showGradient ? 1.0 : 0.0,
-              child: Container(
-                margin: EdgeInsets.all(12),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        gradient: RadialGradient(
-                          colors: [
-                            Colors.black.withOpacity(0.3),
-                            Colors.black.withOpacity(0.1),
+          if (currentImage != null)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: AnimatedOpacity(
+                duration: Duration(seconds: 2),
+                opacity: _showGradient ? 1.0 : 0.0,
+                child: Container(
+                  margin: EdgeInsets.all(12),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          gradient: RadialGradient(
+                            colors: [
+                              Colors.black.withOpacity(0.3),
+                              Colors.black.withOpacity(0.1),
+                            ],
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            WeatherWidget(textColor: _textColor),
+                            TimeWidget(textColor: _textColor),
                           ],
                         ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          WeatherWidget(textColor: _textColor),
-                          TimeWidget(textColor: _textColor),
-                        ],
                       ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );

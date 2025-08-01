@@ -145,7 +145,6 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
     _countdownTimer.cancel();
     super.dispose();
   }
-
   @override
   Widget build(BuildContext context) {
     final isNight = DateTime.now().hour < 6 || DateTime.now().hour > 18;
@@ -164,71 +163,71 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
               width: double.infinity,
               height: double.infinity,
             ),
+
           if (currentImage != null)
             Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
+              bottom: 24,
+              left: 24,
+              right: 24,
               child: AnimatedOpacity(
                 duration: Duration(seconds: 2),
                 opacity: _showGradient ? 1.0 : 0.0,
-                child: Container(
-                  margin: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    // gradient: LinearGradient(
-                    //   begin: Alignment.bottomCenter,
-                    //   end: Alignment.topCenter,
-                    //   colors: isNight
-                    //       ? [Colors.black.withOpacity(0.6), Colors.transparent]
-                    //       : [Colors.white.withOpacity(0.6), Colors.transparent],
-                    // ),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(24),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 24, horizontal: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            WeatherWidget(textColor: _textColor),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                TimeWidget(textColor: _textColor),
-                                SizedBox(height: 4),
-                                Animate(
-                                  effects: [FadeEffect()],
-                                  child: Text(
-                                    '$_secondsLeft s',
-                                    style: GoogleFonts.lato(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: _textColor.withOpacity(0.9),
-                                      shadows: [
-                                        Shadow(
-                                          blurRadius: 2,
-                                          color: Colors.black,
-                                          offset: Offset(1, 1),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            )
-                          ],
-                        ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    // Weather section
+                    _buildFrostedBox(
+                      child: WeatherWidget(textColor: _textColor),
+                      isNight: isNight,
+                    ),
+
+                    // Time + Seconds section
+                    _buildFrostedBox(
+                      isNight: isNight,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          TimeWidget(textColor: _textColor),
+                          SizedBox(height: 4),
+                          Animate(
+                            effects: [FadeEffect()],
+                            child: Text(
+                              '$_secondsLeft s',
+                              style: GoogleFonts.lato(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: _textColor.withOpacity(0.9),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFrostedBox({required Widget child, required bool isNight}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isNight
+                ? Colors.black.withOpacity(0.2)
+                : Colors.blueGrey.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: child,
+        ),
       ),
     );
   }

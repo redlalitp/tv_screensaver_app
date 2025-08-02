@@ -15,7 +15,7 @@ if (keystorePropertiesFile.exists()) {
 }
 android {
     namespace = "com.example.tv_screensaver_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35
     ndkVersion = "27.0.12077973"
 
     signingConfigs {
@@ -42,9 +42,13 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
+        }
     }
 
     buildTypes {
@@ -52,7 +56,17 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
             signingConfig = signingConfigs.getByName("release")
+            ndk {
+                abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
+            }
         }
+    }
+
+    dependencies {
+        implementation("androidx.leanback:leanback:1.2.0")
+        implementation("com.google.android.material:material:1.12.0")
+        // Or use the latest version:
+        // implementation("androidx.leanback:leanback:1.1.0-alpha05")
     }
 }
 

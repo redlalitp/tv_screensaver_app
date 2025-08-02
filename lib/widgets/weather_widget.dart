@@ -1,9 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:weather_icons/weather_icons.dart';
 
 class WeatherWidget extends StatefulWidget {
   final Color textColor;
@@ -15,15 +19,21 @@ class WeatherWidget extends StatefulWidget {
 }
 
 class _WeatherWidgetState extends State<WeatherWidget> {
-  String? _temperature;
-  String? _weatherDescription;
   Timer? _refreshTimer;
+  Map<String, dynamic>? weatherData;
 
   @override
   void initState() {
     super.initState();
     _loadWeather();
-    _refreshTimer = Timer.periodic(Duration(minutes: 5), (_) => _loadWeather());
+    _refreshTimer =
+        Timer.periodic(const Duration(minutes: 5), (_) => _loadWeather());
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadWeather() async {
@@ -40,18 +50,19 @@ class _WeatherWidgetState extends State<WeatherWidget> {
     try {
       final response = await http.get(Uri.parse(url));
       final data = jsonDecode(response.body);
-      setState(() {
-        _temperature = '${data['main']['temp'].round()}°C';
-        _weatherDescription = (data['weather'][0]['main'] as String).toLowerCase();
-      });
+      if (mounted) {
+        setState(() => weatherData = data);
+      }
     } catch (e) {
       print('Weather fetch failed: $e');
     }
   }
 
-  String _chooseAnimation(String desc, String temperature) {
+  String _chooseAnimation(String desc, double temp) {
     final now = DateTime.now();
     final isNight = now.hour < 6 || now.hour > 18;
+
+    desc = desc.toLowerCase();
     if (desc.contains('rain') || desc.contains('drizzle')) {
       return 'assets/lottie/rain.json';
     } else if (desc.contains('thunder') || desc.contains('storm')) {
@@ -60,42 +71,121 @@ class _WeatherWidgetState extends State<WeatherWidget> {
       return 'assets/lottie/cloudy.json';
     } else if (desc.contains('wind') || desc.contains('breeze')) {
       return 'assets/lottie/windy.json';
-    }else if (int.parse(temperature) > 35) {
+    } else if (temp > 35) {
       return 'assets/lottie/hot.json';
     } else {
       return isNight ? 'assets/lottie/night.json' : 'assets/lottie/clear.json';
     }
   }
 
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    super.dispose();
+  String formatTime(int timestamp) {
+    return DateFormat.Hm().format(
+        DateTime.fromMillisecondsSinceEpoch(timestamp * 1000));
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_temperature == null || _weatherDescription == null) {
+    if (weatherData == null) {
       return const SizedBox.shrink();
     }
 
-    final animAsset = _chooseAnimation(_weatherDescription!,_temperature!);
-    final tempText = '$_temperature\n${_weatherDescription![0].toUpperCase()}${_weatherDescription!.substring(1)}';
+    final city = weatherData!['name'] ?? '';
+    final country = weatherData!['sys']['country'] ?? '';
+    final temp = weatherData!['main']['temp'] ?? 0.0;
+    final description = weatherData!['weather'][0]['description'] ?? '';
+    final humidity = weatherData!['main']['humidity'] ?? 0;
+    final pressure = weatherData!['main']['pressure'] ?? 0;
+    final wind = weatherData!['wind']['speed'] ?? 0.0;
+    final clouds = weatherData!['clouds']['all'] ?? 0;
+    final sunrise = weatherData!['sys']['sunrise'];
+    final sunset = weatherData!['sys']['sunset'];
 
-    return Row(
+    final animAsset = _chooseAnimation(description, temp.toDouble());
+
+    return Align(
+      alignment: Alignment.topLeft,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.6,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            // decoration: BoxDecoration(
+            //   color: Colors.blueGrey.shade800.withOpacity(0.5),
+            //   borderRadius: BorderRadius.circular(20),
+            // ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Lottie animation
+                Lottie.asset(
+                  animAsset,
+                  width: 90,
+                  height: 90,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 16),
+
+                // Weather details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '$city, $country',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: widget.textColor,
+                        ),
+                      ),
+                      Text(
+                        '${temp.toStringAsFixed(1)}°C - ${description.toString().toUpperCase()}',
+                        style: GoogleFonts.robotoMono(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: widget.textColor.withOpacity(0.9),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 20,
+                        runSpacing: 10,
+                        children: [
+                          _buildInfoTile(Icons.water_drop, "$humidity%", "Humidity", Colors.cyan),
+                          _buildInfoTile(Icons.speed, "$pressure hPa", "Pressure", Colors.deepPurple),
+                          _buildInfoTile(Icons.air, "${wind.toString()} m/s", "Wind", Colors.teal),
+                          _buildInfoTile(Icons.cloud, "$clouds%", "Clouds", Colors.grey),
+                          _buildInfoTile(WeatherIcons.sunrise, formatTime(sunrise), "Sunrise", Colors.orange),
+                          _buildInfoTile(WeatherIcons.sunset, formatTime(sunset), "Sunset", Colors.deepOrange),
+                        ],
+                      )
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+  }
+
+  Widget _buildInfoTile(IconData icon, String value, String label, Color iconColor) {
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        SizedBox(
-          width: 50,
-          height: 50,
-          child: Lottie.asset(animAsset, repeat: true, fit: BoxFit.contain),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          tempText,
-          style: TextStyle(fontSize: 20, color: widget.textColor),
-          textAlign: TextAlign.right,
-        ),
+        Icon(icon, size: 18, color: iconColor),
+        const SizedBox(height: 2),
+        Text(value,
+            style: GoogleFonts.robotoMono(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: widget.textColor)),
+        Text(label,
+            style: GoogleFonts.poppins(
+                fontSize: 11, color: widget.textColor.withOpacity(0.6))),
       ],
     );
   }

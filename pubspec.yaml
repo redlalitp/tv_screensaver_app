@@ -15,11 +15,20 @@ dependencies:
   palette_generator: ^0.3.3
   lottie: ^3.3.1
   shared_preferences: ^2.2.2
-  geolocator: ^11.0.0
-  geocoding: 4.0.0
+#  geolocator: ^11.0.0
+#  geocoding: 4.0.0
   connectivity_plus: ^6.0.3
   flutter_animate: ^4.5.0
   google_fonts: ^6.1.0
+  weather_icons: ^3.0.0
+
+dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
+
+flutter_icons:
+  android: true
+  ios: false # optional
+  image_path: "assets/icon/ic_launcher.png"
 
 flutter:
   uses-material-design: true
@@ -32,3 +41,4 @@ flutter:
     - assets/lottie/hot.json
     - assets/lottie/storm.json
     - assets/lottie/night.json
+    - assets/images/placeholder.png

@@ -8,7 +8,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tv_screensaver_app/screensaver_page.dart';
 import 'package:tv_screensaver_app/services/unsplash_service.dart';
+import 'package:tv_screensaver_app/temp.dart';
 import 'package:tv_screensaver_app/widgets/time_widget.dart';
 import 'package:tv_screensaver_app/widgets/weather_widget.dart';
 
@@ -22,13 +24,34 @@ class ScreensaverApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TV Screensaver',
+      title: "Advit's Screensaver",
+      initialRoute: '/',
+      routes: {
+        '/': (context) => ScreensaverScreen(),
+        '/screensaver': (context) => ScreensaverScreen(), // Changed to ScreensaverScreen for testing
+      },
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark(),
-      home: ScreensaverScreen(),
     );
   }
 }
+
+// class ScreensaverPage extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       body: Container(
+//         color: Colors.red, // Or any bright, opaque color
+//         child: Center(
+//           child: Text(
+//             'SCREENSAVER TEST',
+//             style: TextStyle(color: Colors.white, fontSize: 30),
+//           ),
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 class ScreensaverScreen extends StatefulWidget {
   @override
@@ -42,15 +65,18 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
   int _currentImageIndex = 0;
   int _secondsLeft = 30;
   final _categories = [
-    'animation movie background kids',
-    'nature kids friendly landscape',
-    'animals kids friendly'
+    'nature',
+    'photography',
+    'astronomy'
   ];
 
   List<String> _imageUrls = [];
   Color _textColor = Colors.black;
+  Color _dominantColor = Colors.black;
   bool _showGradient = false;
   final Map<String, Color> _paletteCache = {};
+
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -62,10 +88,15 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
     await _loadImages();
 
     if (_imageUrls.isNotEmpty) {
-      _updatePalette(_imageUrls[_currentImageIndex]);
+      await _updatePalette(_imageUrls[_currentImageIndex]);
       _timer = Timer.periodic(Duration(seconds: 30), (_) => _nextImage());
       _countdownTimer = Timer.periodic(Duration(seconds: 1), (_) {
         setState(() => _secondsLeft = (_secondsLeft - 1) % 30);
+      });
+    }
+    if (mounted) {
+      setState(() {
+        _isLoading = false; // Now set loading to false
       });
     }
   }
@@ -75,7 +106,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
       _currentImageIndex = (_currentImageIndex + 1) % _imageUrls.length;
       _secondsLeft = 30;
     });
-    _updatePalette(_imageUrls[_currentImageIndex]);
+    _updatePalette(_imageUrls[_currentImageIndex]); // Still commented out from previous step
   }
 
   Future<void> _loadImages() async {
@@ -125,6 +156,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
       setState(() {
         _textColor = contrastColor;
         _showGradient = false;
+        _dominantColor = dominantColor;
       });
 
       await Future.delayed(Duration(milliseconds: 100));
@@ -145,72 +177,105 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
     _countdownTimer.cancel();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
-    final isNight = DateTime.now().hour < 6 || DateTime.now().hour > 18;
-    final currentImage =
-    _imageUrls.isNotEmpty ? _imageUrls[_currentImageIndex] : null;
 
+  if (_isLoading) {
     return Scaffold(
-      backgroundColor: isNight ? Colors.black : Colors.blueGrey.shade100,
-      body: Stack(
-        children: [
-          if (currentImage != null)
-            FadeInImage.assetNetwork(
-              placeholder: '',
-              image: currentImage,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-            ),
-
-          if (currentImage != null)
-            Positioned(
-              bottom: 24,
-              left: 24,
-              right: 24,
-              child: AnimatedOpacity(
-                duration: Duration(seconds: 2),
-                opacity: _showGradient ? 1.0 : 0.0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    // Weather section
-                    _buildFrostedBox(
-                      child: WeatherWidget(textColor: _textColor),
-                      isNight: isNight,
-                    ),
-
-                    // Time + Seconds section
-                    _buildFrostedBox(
-                      isNight: isNight,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          TimeWidget(textColor: _textColor),
-                          SizedBox(height: 4),
-                          Animate(
-                            effects: [FadeEffect()],
-                            child: Text(
-                              '$_secondsLeft s',
-                              style: GoogleFonts.lato(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: _textColor.withOpacity(0.9),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
+      backgroundColor: Colors.black, // Or a placeholder color
+      body: Center(
+        child: SizedBox( // Constrain the size
+          width: 60.0,
+          height: 60.0,
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            strokeWidth: 5.0, // Make it a bit thicker for visibility
+          ),
+        ),
       ),
     );
+  }
+
+  final isNight = DateTime.now().hour < 6 || DateTime.now().hour > 18;
+  final currentImage =
+  _imageUrls.isNotEmpty ? _imageUrls[_currentImageIndex] : null;
+
+  if (currentImage == null) {
+    // This is a fallback if still no image after loading attempt
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Text(
+          "No images available for screensaver.",
+          style: TextStyle(color: Colors.white),
+        ),
+      ),
+    );
+  }
+
+  return Scaffold(
+    backgroundColor: isNight ? Colors.black : Colors.blueGrey.shade100,
+    body: Stack(
+      children: [
+        if (currentImage != null)
+          FadeInImage.assetNetwork(
+            placeholder: 'assets/images/placeholder.png',
+            image: currentImage,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          ),
+
+
+        if (currentImage != null)
+          Positioned(
+            bottom: 24,
+            left: 24,
+            right: 24,
+            child: AnimatedOpacity(
+              duration: Duration(seconds: 2),
+              opacity: 1.0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Weather section
+                  _buildFrostedBox(
+                    child: WeatherWidget(textColor: _textColor),
+                    isNight: isNight,
+                  ),
+
+                  // Time + Seconds section
+                  _buildFrostedBox(
+                    isNight: isNight,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        TimeWidget(textColor: _textColor),
+                        SizedBox(height: 4),
+                        Animate(
+                          effects: [FadeEffect()],
+                          child: Text(
+                            '$_secondsLeft s',
+                            style: GoogleFonts.lato(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: _textColor.withOpacity(0.9),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+
   }
 
   Widget _buildFrostedBox({required Widget child, required bool isNight}) {
@@ -222,8 +287,8 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: isNight
-                ? Colors.black.withOpacity(0.2)
-                : Colors.blueGrey.withOpacity(0.2),
+                ?  _dominantColor.withOpacity(0.2)
+                : _dominantColor.withOpacity(0.2),
             borderRadius: BorderRadius.circular(24),
           ),
           child: child,

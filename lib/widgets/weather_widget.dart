@@ -43,7 +43,7 @@ class _WeatherWidgetState extends State<WeatherWidget> {
       return;
     }
 
-    const city = 'Pune';
+    const city = 'Chinchwad';
     final url =
         'https://api.openweathermap.org/data/2.5/weather?q=$city&units=metric&appid=$apiKey';
 
@@ -67,6 +67,10 @@ class _WeatherWidgetState extends State<WeatherWidget> {
       return 'assets/lottie/rain.json';
     } else if (desc.contains('thunder') || desc.contains('storm')) {
       return 'assets/lottie/storm.json';
+    } else if (desc.contains('overcast')) {
+      return 'assets/lottie/overcast.json';
+    } else if (desc.contains('partly')) {
+      return 'assets/lottie/partly-cloudy.json';
     } else if (desc.contains('cloud')) {
       return 'assets/lottie/cloudy.json';
     } else if (desc.contains('wind') || desc.contains('breeze')) {
@@ -103,65 +107,59 @@ class _WeatherWidgetState extends State<WeatherWidget> {
     final animAsset = _chooseAnimation(description, temp.toDouble());
 
     return Align(
-      alignment: Alignment.topLeft,
+      alignment: Alignment.topRight,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(2.0),
         child: SizedBox(
-          width: MediaQuery.of(context).size.width * 0.6,
+          width: MediaQuery.of(context).size.width * 0.20,
           child: Container(
-            padding: const EdgeInsets.all(16),
-            // decoration: BoxDecoration(
-            //   color: Colors.blueGrey.shade800.withOpacity(0.5),
-            //   borderRadius: BorderRadius.circular(20),
-            // ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.all(2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Lottie animation
+                // Lottie weather animation
                 Lottie.asset(
                   animAsset,
-                  width: 90,
-                  height: 90,
+                  width: 100,
+                  height: 100,
                   fit: BoxFit.contain,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(height: 16),
 
-                // Weather details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$city, $country',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: widget.textColor,
-                        ),
-                      ),
-                      Text(
-                        '${temp.toStringAsFixed(1)}°C - ${description.toString().toUpperCase()}',
-                        style: GoogleFonts.robotoMono(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          color: widget.textColor.withOpacity(0.9),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 20,
-                        runSpacing: 10,
-                        children: [
-                          _buildInfoTile(Icons.water_drop, "$humidity%", "Humidity", Colors.cyan),
-                          _buildInfoTile(Icons.speed, "$pressure hPa", "Pressure", Colors.deepPurple),
-                          _buildInfoTile(Icons.air, "${wind.toString()} m/s", "Wind", Colors.teal),
-                          _buildInfoTile(Icons.cloud, "$clouds%", "Clouds", Colors.grey),
-                          _buildInfoTile(WeatherIcons.sunrise, formatTime(sunrise), "Sunrise", Colors.orange),
-                          _buildInfoTile(WeatherIcons.sunset, formatTime(sunset), "Sunset", Colors.deepOrange),
-                        ],
-                      )
-                    ],
+                // Location and description
+                Text(
+                  '$city, $country',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: widget.textColor,
                   ),
+                ),
+                Text(
+                  '${temp.toStringAsFixed(1)}°C - ${description.toString().toUpperCase()}',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.robotoMono(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: widget.textColor.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Weather info tiles in a wrap (2-3 per row)
+                Wrap(
+                  spacing: 20,
+                  runSpacing: 10,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    _buildInfoTile(Icons.water_drop, "$humidity%", "Humidity", Colors.cyan),
+                    _buildInfoTile(Icons.speed, "$pressure hPa", "Pressure", Colors.deepPurple),
+                    _buildInfoTile(Icons.air, "${wind.toString()} m/s", "Wind", Colors.teal),
+                    _buildInfoTile(Icons.cloud, "$clouds%", "Clouds", Colors.grey),
+                    _buildInfoTile(WeatherIcons.sunrise, formatTime(sunrise), "Sunrise", Colors.orange),
+                    _buildInfoTile(WeatherIcons.sunset, formatTime(sunset), "Sunset", Colors.deepOrange),
+                  ],
                 ),
               ],
             ),
@@ -169,6 +167,7 @@ class _WeatherWidgetState extends State<WeatherWidget> {
         ),
       ),
     );
+
 
   }
 

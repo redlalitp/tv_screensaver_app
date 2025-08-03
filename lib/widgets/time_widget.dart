@@ -42,7 +42,7 @@ class _TimeWidgetState extends State<TimeWidget> {
     //final textColor = isNight ? Colors.white : Colors.black;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           timeString,

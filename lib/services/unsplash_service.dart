@@ -53,14 +53,12 @@ class UnsplashService {
             .whereType<String>()
             .toList();
 
-        images.shuffle(Random());
-
         urls.addAll(images);
       } else {
         print('Unsplash API error for "$category": ${response.statusCode}');
       }
     }
-
+    urls.shuffle(Random());
     return urls;
   }
 }

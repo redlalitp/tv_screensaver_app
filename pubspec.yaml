@@ -41,4 +41,6 @@ flutter:
     - assets/lottie/hot.json
     - assets/lottie/storm.json
     - assets/lottie/night.json
+    - assets/lottie/overcast.json
+    - assets/lottie/partly-cloudy.json
     - assets/images/placeholder.png

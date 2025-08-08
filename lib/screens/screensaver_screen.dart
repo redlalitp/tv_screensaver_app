@@ -11,8 +11,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tv_screensaver_app/services/unsplash_service.dart';
 import 'package:tv_screensaver_app/widgets/time_widget.dart';
 import 'package:tv_screensaver_app/widgets/weather_widget.dart';
+import 'dart:math' hide log;
+import 'package:fast_immutable_collections/fast_immutable_collections.dart';
+import 'dart:developer';
 
 import '../services/palette_service.dart';
+import '../utils/LruCache.dart';
 
 class ScreensaverScreen extends StatefulWidget {
   @override
@@ -35,7 +39,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
   Color _textColor = Colors.black;
   Color _dominantColor = Colors.black;
   bool _showGradient = false;
-  final Map<String, Color> _paletteCache = {};
+  final _paletteCache = LruCache<String, Color>(maxSize: 100);
 
   bool _isLoading = true;
 
@@ -64,7 +68,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
 
   void _nextImage() {
     setState(() {
-      _currentImageIndex = (_currentImageIndex + 1) % _imageUrls.length;
+      _currentImageIndex = (_currentImageIndex + Random().nextInt(100)) % _imageUrls.length;
       _secondsLeft = 30;
     });
     _updatePalette(_imageUrls[_currentImageIndex]); // Still commented out from previous step
@@ -91,33 +95,49 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
   }
 
   Future<void> _updatePalette(String imageUrl) async {
-    if (_paletteCache.containsKey(imageUrl)) {
+    if (_paletteCache.containsKey('${imageUrl}-dominant')) {
+      print('Palette cache hit for $imageUrl');
       setState(() {
-        _textColor = _paletteCache[imageUrl]!;
+        _textColor = getContrastColorFromPaletteCache(imageUrl)!;
+        _dominantColor = getDominantColorFromPaletteCache(imageUrl)!;
         _showGradient = true;
       });
       return;
     }
 
+    print('Palette cache miss for $imageUrl');
+
     try {
 
-      final contrastColor = await generateContrastColor(imageUrl);
-
-
-      _paletteCache[imageUrl] = contrastColor;
-
       final dominantColor = await generateDominantColor(imageUrl);
+
+      final contrastColor = await generateContrastColor(imageUrl, dominantColor);
+
+      print('Contrast color: $contrastColor');
+      print('Dominant color: $dominantColor');
+
+      setContrastColorToPaletteCache(imageUrl, contrastColor);
+      setDominantColorToPaletteCache(imageUrl, dominantColor);
+
+      print("cache updated successfully");
+
       setState(()  {
         _textColor = contrastColor;
         _showGradient = false;
         _dominantColor = dominantColor;
       });
 
+      print("state updated successfully");
+
       await Future.delayed(Duration(milliseconds: 100));
       if (mounted) {
         setState(() => _showGradient = true);
       }
+
+      print("gradient updated successfully");
+
     } catch (_) {
+      print('Error generating palette for $imageUrl');
       setState(() {
         _textColor = Colors.black.withOpacity(0.9);
         _showGradient = true;
@@ -257,5 +277,26 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
         ),
       ),
     );
+  }
+
+  Color? getContrastColorFromPaletteCache(String imageUrl) {
+    return _paletteCache.get('${imageUrl}-contrast');
+  }
+
+  Color? getDominantColorFromPaletteCache(String imageUrl) {
+    return _paletteCache.get('${imageUrl}-dominant');
+  }
+
+  void setContrastColorToPaletteCache(String imageUrl, Color contrastColor) {
+   try {
+     _paletteCache.put('${imageUrl}-contrast', contrastColor);
+   }
+   catch(e) {
+     print("Error setting contrast color to palette cache: $e");
+   }
+  }
+
+  void setDominantColorToPaletteCache(String imageUrl, Color dominantColor) {
+    _paletteCache.put('${imageUrl}-dominant', dominantColor);
   }
 }

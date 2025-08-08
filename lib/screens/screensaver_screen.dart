@@ -31,7 +31,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
   int _secondsLeft = 30;
   final _categories = [
     'nature',
-    'photography',
+    'planets',
     'astronomy'
   ];
 

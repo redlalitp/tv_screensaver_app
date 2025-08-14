@@ -17,6 +17,7 @@ import 'dart:developer';
 
 import '../services/palette_service.dart';
 import '../utils/LruCache.dart';
+import '../widgets/calendar_widget.dart';
 
 class ScreensaverScreen extends StatefulWidget {
   @override
@@ -253,6 +254,21 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
               ),
             ),
           ),
+
+          Align(
+            alignment: Alignment.topLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 24, left: 24),
+              child: _buildFrostedBox(
+                isNight: isNight,
+
+                  child: SizedBox(
+                    height: 225, // adjust based on your design
+                    child: CalendarWidget(), // your month view widget
+                  ),
+                ),
+              ),
+          )
         ],
       ),
 
@@ -264,7 +280,7 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
+        filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(

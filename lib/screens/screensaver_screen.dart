@@ -263,8 +263,8 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
                 isNight: isNight,
 
                   child: SizedBox(
-                    height: 225, // adjust based on your design
-                    child: CalendarWidget(), // your month view widget
+                    height: 310, // adjust based on your design
+                    child: CalendarWidget(textColor: _textColor, dominantColor: _dominantColor), // your month view widget
                   ),
                 ),
               ),

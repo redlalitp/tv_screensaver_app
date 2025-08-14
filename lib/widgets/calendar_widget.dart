@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -5,11 +6,15 @@ import 'package:intl/intl.dart';
 class CalendarWidget extends StatefulWidget {
   final double width;
   final double height;
+  final Color textColor;
+  final Color dominantColor;
 
   const CalendarWidget({
     super.key,
-    this.width = 200,
-    this.height = 100,
+    this.width = 280,
+    this.height = 200,
+    required this.textColor,
+    required this.dominantColor
   });
 
   @override
@@ -47,7 +52,7 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
     final List<Widget> dayWidgets = [];
     for (int i = 0; i < startWeekday; i++) {
-      dayWidgets.add(const SizedBox.shrink()); // Empty spaces
+      dayWidgets.add(const SizedBox.shrink());
     }
 
     final today = DateTime.now();
@@ -58,15 +63,20 @@ class _CalendarWidgetState extends State<CalendarWidget> {
 
       dayWidgets.add(
         Container(
+          margin: const EdgeInsets.all(0),
           decoration: BoxDecoration(
-            color: isToday ? Colors.orangeAccent : Colors.transparent,
-            borderRadius: BorderRadius.circular(4),
+            color: isToday ? widget.textColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+            // border: isToday
+            //     ? Border.all(color: Colors.white.withOpacity(0.8), width: 1)
+            //     : null,
           ),
           alignment: Alignment.center,
           child: Text(
             '$day',
             style: TextStyle(
-              color: isToday ? Colors.white : Colors.white70,
+              fontSize: 14,
+              color: isToday ? this.widget.dominantColor : this.widget.textColor,
               fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -91,46 +101,48 @@ class _CalendarWidgetState extends State<CalendarWidget> {
         }
         return KeyEventResult.ignored;
       },
-      child: Container(
-        width: widget.width,
-        height: widget.height,
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          children: [
-            Text(
-              DateFormat.yMMMM().format(DateTime(_currentYear, _currentMonth)),
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 1),
-            GridView.count(
-              crossAxisCount: 7,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
+          child: Container(
+            width: widget.width,
+            height: widget.height,
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                ...['S', 'M', 'T', 'W', 'T', 'F', 'S']
-                    .map((d) => Center(
-                  child: Text(
-                    d,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white70,
-                    ),
+                // Month & Year
+                Text(
+                  DateFormat.yMMMM().format(DateTime(_currentYear, _currentMonth)),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: widget.textColor,
                   ),
-                )),
-                ..._buildCalendarDays(),
+                ),
+                const SizedBox(height: 4),
+                // Calendar Grid
+                GridView.count(
+                  crossAxisCount: 7,
+                  shrinkWrap: true,
+                  mainAxisSpacing: 4,
+                  crossAxisSpacing: 4,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    ...['S', 'M', 'T', 'W', 'T', 'F', 'S']
+                        .map((d) => Center(
+                      child: Text(
+                        d,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: widget.textColor,
+                        ),
+                      ),
+                    )),
+                    ..._buildCalendarDays(),
+                  ],
+                ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 }

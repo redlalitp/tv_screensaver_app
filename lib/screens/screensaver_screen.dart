@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -35,6 +36,8 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
     'planets',
     'astronomy'
   ];
+  bool _showCalendar = false;
+  late FocusNode _focusNode;
 
   List<String> _imageUrls = [];
   Color _textColor = Colors.black;
@@ -52,6 +55,8 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
 
   Future<void> _initializeImages() async {
     await _loadImages();
+
+    _focusNode = FocusNode();
 
     if (_imageUrls.isNotEmpty) {
       await _updatePalette(_imageUrls[_currentImageIndex]);
@@ -148,24 +153,31 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _timer.cancel();
     _countdownTimer.cancel();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  void _toggleCalendar() {
+    setState(() {
+      _showCalendar = !_showCalendar;
+    });
+  }
 
+  @override
+
+  Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.black, // Or a placeholder color
+        backgroundColor: Colors.black,
         body: Center(
-          child: SizedBox( // Constrain the size
+          child: SizedBox(
             width: 60.0,
             height: 60.0,
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              strokeWidth: 5.0, // Make it a bit thicker for visibility
+              strokeWidth: 5.0,
             ),
           ),
         ),
@@ -177,7 +189,6 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
     _imageUrls.isNotEmpty ? _imageUrls[_currentImageIndex] : null;
 
     if (currentImage == null) {
-      // This is a fallback if still no image after loading attempt
       return Scaffold(
         backgroundColor: Colors.black,
         body: Center(
@@ -191,90 +202,109 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
 
     return Scaffold(
       backgroundColor: isNight ? Colors.black : Colors.blueGrey.shade100,
-      body: Stack(
-        children: [
-          if (currentImage != null)
-            FadeInImage.assetNetwork(
-              placeholder: 'assets/images/placeholder.png',
-              image: currentImage,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-            ),
-
-          // Weather widget - right vertical column
-          Positioned(
-            top: 24,
-            bottom: 24,
-            right: 24,
-            child: AnimatedOpacity(
-              duration: Duration(seconds: 2),
-              opacity: 1.0,
-              child: _buildFrostedBox(
-                isNight: isNight,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    WeatherWidget(textColor: _textColor),
-                    SizedBox(height: 12),
-                    // Add more widgets here if needed
-                  ],
-                ),
+      body: RawKeyboardListener(
+        focusNode: _focusNode,
+        autofocus: true,
+        onKey: (event) {
+          if (event is RawKeyDownEvent &&
+              (event.logicalKey == LogicalKeyboardKey.select ||
+                  event.logicalKey == LogicalKeyboardKey.enter)) {
+            _toggleCalendar();
+          }
+        },
+        child: Stack(
+          children: [
+            if (currentImage != null)
+              FadeInImage.assetNetwork(
+                placeholder: 'assets/images/placeholder.png',
+                image: currentImage,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: double.infinity,
               ),
-            ),
-          ),
 
-          // Time widget - bottom left
-          Positioned(
-            bottom: 24,
-            left: 24,
-            child: AnimatedOpacity(
-              duration: Duration(seconds: 2),
-              opacity: 1.0,
-              child: _buildFrostedBox(
-                isNight: isNight,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TimeWidget(textColor: _textColor),
-                    SizedBox(height: 4),
-                    Animate(
-                      effects: [FadeEffect()],
-                      child: Text(
-                        '$_secondsLeft s',
-                        style: GoogleFonts.lato(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: _textColor.withOpacity(0.9),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          Align(
-            alignment: Alignment.topLeft,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 24, left: 24),
-              child: _buildFrostedBox(
-                isNight: isNight,
-
-                  child: SizedBox(
-                    height: 310, // adjust based on your design
-                    child: CalendarWidget(textColor: _textColor, dominantColor: _dominantColor), // your month view widget
+            // Weather widget
+            Positioned(
+              top: 24,
+              bottom: 24,
+              right: 24,
+              child: AnimatedOpacity(
+                duration: Duration(seconds: 2),
+                opacity: 1.0,
+                child: _buildFrostedBox(
+                  isNight: isNight,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      WeatherWidget(textColor: _textColor),
+                      SizedBox(height: 12),
+                    ],
                   ),
                 ),
               ),
-          )
-        ],
+            ),
+
+            // Time widget
+            Positioned(
+              bottom: 24,
+              left: 24,
+              child: AnimatedOpacity(
+                duration: Duration(seconds: 2),
+                opacity: 1.0,
+                child: _buildFrostedBox(
+                  isNight: isNight,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TimeWidget(textColor: _textColor),
+                      SizedBox(height: 4),
+                      Animate(
+                        effects: [FadeEffect()],
+                        child: Text(
+                          '$_secondsLeft s',
+                          style: GoogleFonts.lato(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: _textColor.withOpacity(0.9),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Calendar widget (toggleable)
+            Align(
+              alignment: Alignment.topLeft,
+              child: AnimatedSwitcher(
+                duration: Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) =>
+                    SizeTransition(sizeFactor: animation, child: child),
+                child: _showCalendar
+                    ? Padding(
+                  padding: const EdgeInsets.only(top: 24, left: 24),
+                  child: _buildFrostedBox(
+                    isNight: isNight,
+                    child: SizedBox(
+                      height: 310,
+                      child: CalendarWidget(
+                        textColor: _textColor,
+                        dominantColor: _dominantColor,
+                      ),
+                    ),
+                  ),
+                )
+                    : SizedBox.shrink(),
+              ),
+            ),
+          ],
+        ),
       ),
-
     );
-
   }
+
 
   Widget _buildFrostedBox({required Widget child, required bool isNight}) {
     return ClipRRect(

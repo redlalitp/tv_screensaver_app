@@ -36,7 +36,7 @@ class _TimeWidgetState extends State<TimeWidget> {
   Widget build(BuildContext context) {
     final isNight = _now.hour < 6 || _now.hour > 18;
 
-    final timeString = DateFormat('HH:mm').format(_now);
+    final timeString = DateFormat('hh:mm a').format(_now);
     final dayString = DateFormat('EEEE').format(_now);
     final dateString = DateFormat('d MMM yyyy').format(_now);
     //final textColor = isNight ? Colors.white : Colors.black;

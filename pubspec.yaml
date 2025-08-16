@@ -25,11 +25,19 @@ dependencies:
 
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.4.1
 
 flutter_icons:
   android: true
   ios: false # optional
   image_path: "assets/icon/ic_launcher.png"
+
+flutter_native_splash:
+  color: "#000000"          # background color
+  image: "assets/images/splash.png"
+  android: true
+  ios: true
+  web: false
 
 flutter:
   uses-material-design: true
@@ -45,3 +53,4 @@ flutter:
     - assets/lottie/overcast.json
     - assets/lottie/partly-cloudy.json
     - assets/images/placeholder.png
+    - assets/images/splash.png

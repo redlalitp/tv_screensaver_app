@@ -18,6 +18,7 @@ import 'dart:developer';
 
 import '../services/palette_service.dart';
 import '../utils/LruCache.dart';
+import '../widgets/analog_clock.dart';
 import '../widgets/calendar_widget.dart';
 
 class ScreensaverScreen extends StatefulWidget {
@@ -170,19 +171,35 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
   Widget build(BuildContext context) {
     if (_isLoading) {
       return Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: SizedBox(
-            width: 60.0,
-            height: 60.0,
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              strokeWidth: 5.0,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Background image
+            Image.asset(
+              'assets/images/splash.png',
+              fit: BoxFit.cover,
             ),
-          ),
+
+            // Loading bar at bottoms
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 50),
+                child: SizedBox(
+                  width: 300, // adjust width for TV screen
+                  child: LinearProgressIndicator(
+                    backgroundColor: Colors.white24,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    minHeight: 8,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
+
 
     final isNight = DateTime.now().hour < 6 || DateTime.now().hour > 18;
     final currentImage =
@@ -299,6 +316,28 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
                     : SizedBox.shrink(),
               ),
             ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: AnimatedSwitcher(
+                duration: Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) =>
+                    SizeTransition(sizeFactor: animation, child: child),
+                child: _showCalendar
+                    ? Padding(
+                  padding: const EdgeInsets.all(24.0),
+                    child: SizedBox(
+                      height: 175,
+                      child: Center( // Added Center widget
+                        child: AnalogClock(
+                          textColor: _textColor,
+                          dominantColor: _dominantColor
+                        ),
+                      ),
+                    ),
+                )
+                    : SizedBox.shrink(),
+              ),
+            )
           ],
         ),
       ),

@@ -77,7 +77,7 @@ class ClockPainter extends CustomPainter {
 
     // Clock face
     final paintCircle = Paint()
-      ..color = dominantColor.withOpacity(0.5)
+      ..color = Colors.transparent
       ..style = PaintingStyle.fill;
 
 

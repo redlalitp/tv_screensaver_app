@@ -137,7 +137,7 @@ class _WeatherWidgetState extends State<WeatherWidget> {
                   ),
                 ),
                 Text(
-                  '${temp.toStringAsFixed(1)}°C - ${description.toString().toUpperCase()}',
+                  '${temp.toStringAsFixed(1)}°C \n ${description.toString().toUpperCase()}',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.robotoMono(
                     fontSize: 14,

@@ -243,7 +243,6 @@ class _ScreensaverScreenState extends State<ScreensaverScreen>
             // Weather widget
             Positioned(
               top: 24,
-              bottom: 24,
               right: 24,
               child: AnimatedOpacity(
                 duration: Duration(seconds: 2),
